@@ -1,0 +1,17 @@
+# Node
+node_modules/
+frontend/dist/
+frontend/.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Generated DB (rebuilt from the workbook on deploy)
+backend/data/royal_enfield.db
+
+# OS / editor
+.DS_Store
+*.log
