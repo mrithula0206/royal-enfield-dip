@@ -4,7 +4,7 @@ import { api } from '../api';
 import {
   IconHome, IconMapPin, IconBuilding, IconBike, IconShare, IconMegaphone, IconShield,
   IconCompass, IconSparkle, IconFileText, IconBarChart, IconDatabase, IconTarget,
-  IconUserCog, IconRefresh, IconScroll, IconChevronLeft,
+  IconChevronLeft,
 } from './Icons';
 
 const navItem = ({ isActive }) => `nav-item ${isActive ? 'active' : ''}`;
@@ -26,9 +26,6 @@ const MAIN_NAV = [
 const CONFIG_NAV = [
   { to: '/master-data', label: 'Master Data', icon: IconDatabase },
   { to: '/targets', label: 'Targets', icon: IconTarget },
-  { to: '/user-management', label: 'User Management', icon: IconUserCog },
-  { to: '/data-sync-status', label: 'Data Sync Status', icon: IconRefresh },
-  { to: '/audit-logs', label: 'Audit Logs', icon: IconScroll },
 ];
 
 export default function Sidebar() {

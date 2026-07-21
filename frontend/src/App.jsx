@@ -15,9 +15,6 @@ import DailySummary from './pages/DailySummary';
 import Reports from './pages/Reports';
 import MasterData from './pages/MasterData';
 import Targets from './pages/Targets';
-import UserManagement from './pages/UserManagement';
-import DataSyncStatus from './pages/DataSyncStatus';
-import AuditLogs from './pages/AuditLogs';
 
 export default function App() {
   return (
@@ -41,9 +38,6 @@ export default function App() {
             <Route path="/reports" element={<Reports />} />
             <Route path="/master-data" element={<MasterData />} />
             <Route path="/targets" element={<Targets />} />
-            <Route path="/user-management" element={<UserManagement />} />
-            <Route path="/data-sync-status" element={<DataSyncStatus />} />
-            <Route path="/audit-logs" element={<AuditLogs />} />
           </Routes>
         </main>
       </div>
