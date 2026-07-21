@@ -3,6 +3,7 @@ import { FilterProvider } from './FilterContext';
 import Topbar from './components/Topbar';
 import Sidebar from './components/Sidebar';
 import ExecutiveDashboard from './pages/ExecutiveDashboard';
+import Comparisons from './pages/Comparisons';
 import RegionPerformance from './pages/RegionPerformance';
 import DealerPerformance from './pages/DealerPerformance';
 import ModelPerformance from './pages/ModelPerformance';
@@ -26,6 +27,7 @@ export default function App() {
         <main>
           <Routes>
             <Route path="/" element={<ExecutiveDashboard />} />
+            <Route path="/comparisons" element={<Comparisons />} />
             <Route path="/region-performance" element={<RegionPerformance />} />
             <Route path="/dealer-performance" element={<DealerPerformance />} />
             <Route path="/model-performance" element={<ModelPerformance />} />

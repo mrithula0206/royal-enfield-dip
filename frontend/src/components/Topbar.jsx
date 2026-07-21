@@ -53,25 +53,42 @@ export default function Topbar() {
       <div className="topbar-right">
         <div style={{ position: 'relative' }}>
           <button className="pill-btn" onClick={() => toggle('period')}>
-            <IconCalendar size={14} /> {f.currentMonth || '…'} <IconChevronDown size={13} />
+            <IconCalendar size={14} /> {f.mode === 'mom' ? f.currentMonth : f.currentDate || '…'} <IconChevronDown size={13} />
           </button>
           {open === 'period' && (
-            <div style={{ ...panelStyle, right: 0 }} onClick={e => e.stopPropagation()}>
-              <div style={fieldLabel}>Period</div>
-              <select style={selectStyle} value={f.currentMonth || ''} onChange={e => f.setCurrentMonth(e.target.value)}>
-                {f.months.map(m => <option key={m.value} value={m.value}>{m.value}</option>)}
-              </select>
-              <div style={fieldLabel}>Compare against</div>
-              <select style={{ ...selectStyle, marginBottom: 0 }} value={f.previousMonth || ''} onChange={e => f.setPreviousMonth(e.target.value)}>
-                {f.months.map(m => <option key={m.value} value={m.value}>{m.value}</option>)}
-              </select>
+            <div style={{ ...panelStyle, right: 0, minWidth: 250 }} onClick={e => e.stopPropagation()}>
+              <div className="tab-row" style={{ marginBottom: 12 }}>
+                <button className={f.mode === 'mom' ? 'on' : ''} onClick={() => f.setMode('mom')}>Month on Month</button>
+                <button className={f.mode === 'dod' ? 'on' : ''} onClick={() => f.setMode('dod')}>Day on Day</button>
+              </div>
+              {f.mode === 'mom' ? (
+                <>
+                  <div style={fieldLabel}>Period</div>
+                  <select style={selectStyle} value={f.currentMonth || ''} onChange={e => f.setCurrentMonth(e.target.value)}>
+                    {f.months.map(m => <option key={m.value} value={m.value}>{m.value}</option>)}
+                  </select>
+                  <div style={fieldLabel}>Compare against</div>
+                  <select style={{ ...selectStyle, marginBottom: 0 }} value={f.previousMonth || ''} onChange={e => f.setPreviousMonth(e.target.value)}>
+                    {f.months.map(m => <option key={m.value} value={m.value}>{m.value}</option>)}
+                  </select>
+                </>
+              ) : (
+                <>
+                  <div style={fieldLabel}>Day</div>
+                  <input type="date" style={selectStyle} value={f.currentDate || ''} min={f.dates[0]} max={f.dates[f.dates.length - 1]}
+                    onChange={e => f.setCurrentDate(e.target.value)} />
+                  <div style={fieldLabel}>Compare against</div>
+                  <input type="date" style={{ ...selectStyle, marginBottom: 0 }} value={f.previousDate || ''} min={f.dates[0]} max={f.dates[f.dates.length - 1]}
+                    onChange={e => f.setPreviousDate(e.target.value)} />
+                </>
+              )}
             </div>
           )}
         </div>
 
         <div style={{ position: 'relative' }}>
           <button className="pill-btn compare" onClick={() => toggle('period')}>
-            Compare: {f.previousMonth || '…'} <IconChevronDown size={13} />
+            Compare: {f.mode === 'mom' ? f.previousMonth : f.previousDate || '…'} <IconChevronDown size={13} />
           </button>
         </div>
 

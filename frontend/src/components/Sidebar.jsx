@@ -4,13 +4,14 @@ import { api } from '../api';
 import {
   IconHome, IconMapPin, IconBuilding, IconBike, IconShare, IconMegaphone, IconShield,
   IconCompass, IconSparkle, IconFileText, IconBarChart, IconDatabase, IconTarget,
-  IconChevronLeft,
+  IconChevronLeft, IconCompare,
 } from './Icons';
 
 const navItem = ({ isActive }) => `nav-item ${isActive ? 'active' : ''}`;
 
 const MAIN_NAV = [
   { to: '/', label: 'Executive Dashboard', icon: IconHome, end: true },
+  { to: '/comparisons', label: 'Comparisons', icon: IconCompare },
   { to: '/region-performance', label: 'Region Performance', icon: IconMapPin },
   { to: '/dealer-performance', label: 'Dealer Performance', icon: IconBuilding },
   { to: '/model-performance', label: 'Model Performance', icon: IconBike },

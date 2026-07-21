@@ -22,6 +22,11 @@ const KPI_DEFS = [
   { key: 'Dropped', label: 'Dropped Leads', accent: 'red', icon: IconTrash },
 ];
 
+const FUNNEL_COLS = [
+  { key: 'Leads', label: 'Leads' }, { key: 'Bookings', label: 'Book.' },
+  { key: 'Open_Enquiries', label: 'Open' }, { key: 'Dropped', label: 'Drop.' },
+];
+
 const STATUS_COLORS = { Healthy: '#2FA666', 'Needs Attention': '#E8A33D', Critical: '#D6323F' };
 const SEV_TAG = { High: 'Critical', Medium: 'Needs Attention', Low: 'Positive' };
 const SEV_TAG_CLASS = { High: 'High', Medium: 'Medium', Low: 'Low' };
@@ -32,13 +37,33 @@ function regionHeatColor(value, max) {
   return `rgb(${r},${g},${b})`;
 }
 
+function FunnelTable({ title, sub, rows, nameKey }) {
+  return (
+    <div className="panel">
+      <div className="panel-head"><div><div className="panel-title">{title}</div><div className="panel-sub">{sub}</div></div></div>
+      <table>
+        <thead><tr><th>{nameKey === 'Model' ? 'Model' : nameKey === 'Source' ? 'Source' : 'Dealer'}</th>{FUNNEL_COLS.map(c => <th key={c.key} className="mono">{c.label}</th>)}</tr></thead>
+        <tbody>
+          {rows.map(r => (
+            <tr key={r[nameKey] || r.Dealer_ID}>
+              <td style={{ fontSize: 11.5 }}>{nameKey === 'Dealer' ? r.Dealer_Name : r[nameKey]}</td>
+              {FUNNEL_COLS.map(c => <td key={c.key} className="mono" style={{ fontSize: 11 }}>{r[c.key]}</td>)}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default function ExecutiveDashboard() {
   const f = useFilters();
   const [state, setState] = useState({ loading: true, error: null });
-  const [mom, setMom] = useState(null);
+  const [period, setPeriod] = useState(null); // normalized { current:{label,kpis}, previous:{label,kpis}, deltas }
   const [regionRows, setRegionRows] = useState([]);
   const [modelRows, setModelRows] = useState([]);
   const [sourceRows, setSourceRows] = useState([]);
+  const [dealerRows, setDealerRows] = useState([]);
   const [targetVsActual, setTargetVsActual] = useState([]);
   const [campaignRows, setCampaignRows] = useState([]);
   const [topInsights, setTopInsights] = useState([]);
@@ -67,38 +92,51 @@ export default function ExecutiveDashboard() {
     return () => { mounted = false; };
   }, []);
 
-  // period + filter scoped data
+  // period + filter scoped data — mode-aware (Month-on-Month or Day-on-Day)
   useEffect(() => {
-    if (!f?.currentMonth || !f?.previousMonth) return;
+    const ready = f?.mode === 'mom' ? (f.currentMonth && f.previousMonth) : (f?.currentDate && f?.previousDate);
+    if (!ready) return;
     let mounted = true;
-    const { start, end } = monthBounds(f.currentMonth);
+
     const dimFilters = { region: f.region || undefined, model: f.model || undefined, source: f.source || undefined };
+    let start, end, periodPromise;
+    if (f.mode === 'mom') {
+      ({ start, end } = monthBounds(f.currentMonth));
+      periodPromise = api.monthOnMonth({ current_month: f.currentMonth, previous_month: f.previousMonth, ...dimFilters })
+        .then(r => ({ current: r.current_period, previous: r.previous_period, deltas: r.deltas }));
+    } else {
+      start = end = f.currentDate;
+      periodPromise = api.dayOnDay({ current_date: f.currentDate, previous_date: f.previousDate })
+        .then(r => ({ current: { label: r.current_day.date, kpis: r.current_day.kpis }, previous: { label: r.previous_day.date, kpis: r.previous_day.kpis }, deltas: r.deltas }));
+    }
 
     Promise.all([
-      api.monthOnMonth({ current_month: f.currentMonth, previous_month: f.previousMonth, ...dimFilters }),
+      periodPromise,
       api.drilldown('region', { start, end, model: dimFilters.model, source: dimFilters.source }),
       api.drilldown('model', { start, end, region: dimFilters.region, source: dimFilters.source }),
       api.drilldown('source', { start, end, region: dimFilters.region, model: dimFilters.model }),
+      api.drilldown('dealer', { start, end, region: dimFilters.region, model: dimFilters.model, source: dimFilters.source }),
       api.targetVsActual({ level: 'region', start, end }),
-    ]).then(([momRes, region, model, source, tva]) => {
+    ]).then(([periodRes, region, model, source, dealer, tva]) => {
       if (!mounted) return;
-      setMom(momRes);
+      setPeriod(periodRes);
       setRegionRows(region.rows.slice(0, 8));
-      setModelRows(model.rows.slice(0, 5));
-      setSourceRows(source.rows.slice(0, 5));
+      setModelRows(model.rows.slice().sort((a, b) => b.Bookings - a.Bookings).slice(0, 5));
+      setSourceRows(source.rows.slice().sort((a, b) => b.Bookings - a.Bookings).slice(0, 5));
+      setDealerRows(dealer.rows.slice().sort((a, b) => b.Bookings - a.Bookings).slice(0, 5));
       setTargetVsActual(tva.rows.slice().sort((a, b) => b.Booking_Actual - a.Booking_Actual).slice(0, 5));
       setState({ loading: false, error: null });
     }).catch(err => {
       if (mounted) setState({ loading: false, error: err.message });
     });
     return () => { mounted = false; };
-  }, [f?.currentMonth, f?.previousMonth, f?.region, f?.model, f?.source]);
+  }, [f?.mode, f?.currentMonth, f?.previousMonth, f?.currentDate, f?.previousDate, f?.region, f?.model, f?.source]);
 
   useEffect(() => {
     api.dailyTrend({ granularity: trendGranularity }).then(r => setTrendPoints(r.points)).catch(() => {});
   }, [trendGranularity]);
 
-  if (state.loading || !mom) return <div className="loading">Loading executive dashboard…</div>;
+  if (state.loading || !period) return <div className="loading">Loading executive dashboard…</div>;
   if (state.error) return (
     <div className="error-box">
       Could not reach the API ({state.error}). Make sure the backend is running at the URL
@@ -106,19 +144,15 @@ export default function ExecutiveDashboard() {
     </div>
   );
 
-  const kpis = mom.current_period.kpis;
-  const prevKpis = mom.previous_period.kpis;
-  const deltas = mom.deltas;
+  const kpis = period.current.kpis;
+  const prevKpis = period.previous.kpis;
+  const deltas = period.deltas;
 
   const hygieneCounts = { Healthy: 0, 'Needs Attention': 0, Critical: 0 };
   campaignRows.forEach(c => { hygieneCounts[c.Campaign_Status] = (hygieneCounts[c.Campaign_Status] || 0) + 1; });
   const hygieneDonutData = Object.entries(hygieneCounts).map(([name, value]) => ({ name, value }));
 
   const maxRegionLeads = regionRows[0]?.Leads || 1;
-  const maxModelBookings = Math.max(...modelRows.map(r => r.Bookings), 1);
-  const totalModelBookings = modelRows.reduce((s, r) => s + r.Bookings, 0) || 1;
-  const maxSourceLeads = Math.max(...sourceRows.map(r => r.Leads), 1);
-  const totalSourceLeads = sourceRows.reduce((s, r) => s + r.Leads, 0) || 1;
 
   const funnelStages = [
     { label: 'Leads Created', value: kpis.Leads, pct: 1, icon: IconUsers, accent: 'blue' },
@@ -140,7 +174,7 @@ export default function ExecutiveDashboard() {
         <div>
           <div className="page-title">Executive Dashboard</div>
           <div className="page-meta">
-            {mom.current_period.label} vs {mom.previous_period.label}
+            {f.mode === 'mom' ? 'Month on Month' : 'Day on Day'} · {period.current.label} vs {period.previous.label}
             {(f.region || f.model || f.source) && (
               <> · Filtered by {[f.region, f.model, f.source].filter(Boolean).join(', ')}</>
             )}
@@ -158,7 +192,7 @@ export default function ExecutiveDashboard() {
             icon={d.icon}
             delta={deltas[d.key]}
             deltaUnit={deltas[d.key + '_unit']}
-            compareLabel={mom.previous_period.label}
+            compareLabel={period.previous.label}
             compareValue={prevKpis[d.key]?.toLocaleString('en-IN')}
           />
         ))}
@@ -299,66 +333,34 @@ export default function ExecutiveDashboard() {
         </div>
       </div>
 
-      <div className="grid-4">
-        <div className="panel">
-          <div className="panel-head"><div><div className="panel-title">Top 5 Models</div><div className="panel-sub">By bookings</div></div></div>
-          <table>
-            <thead><tr><th>Model</th><th className="mono">Book.</th></tr></thead>
-            <tbody>
-              {modelRows.map(r => (
-                <tr key={r.Model}>
-                  <td style={{ fontSize: 11.5 }}>{r.Model}</td>
-                  <td className="bar-cell">
-                    <div className="mini-bar-track" style={{ width: 44 }}><div className="mini-bar-fill" style={{ width: `${(r.Bookings / maxModelBookings) * 100}%`, background: 'var(--blue)' }}></div></div>
-                    <span className="mono" style={{ fontSize: 11 }}>{r.Bookings}</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <div className="grid-3">
+        <FunnelTable title="Top 5 Models" sub="By bookings" rows={modelRows} nameKey="Model" />
+        <FunnelTable title="Top 5 Sources" sub="By bookings, channel-wise" rows={sourceRows} nameKey="Source" />
+        <FunnelTable title="Top 5 Dealers" sub="By bookings" rows={dealerRows} nameKey="Dealer" />
+      </div>
 
-        <div className="panel">
-          <div className="panel-head"><div><div className="panel-title">Top 5 Sources</div><div className="panel-sub">By leads</div></div></div>
-          <table>
-            <thead><tr><th>Source</th><th className="mono">Leads</th></tr></thead>
-            <tbody>
-              {sourceRows.map(r => (
-                <tr key={r.Source}>
-                  <td style={{ fontSize: 11.5 }}>{r.Source}</td>
-                  <td className="bar-cell">
-                    <div className="mini-bar-track" style={{ width: 44 }}><div className="mini-bar-fill" style={{ width: `${(r.Leads / maxSourceLeads) * 100}%`, background: 'var(--amber)' }}></div></div>
-                    <span className="mono" style={{ fontSize: 11 }}>{r.Leads}</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div className="panel" style={{ marginBottom: 14 }}>
+        <div className="panel-head">
+          <div><div className="panel-title">AI Insights</div><div className="panel-sub">Latest {topInsights.length} generated</div></div>
+          <Link className="panel-link" to="/ai-insights">View all →</Link>
         </div>
-
-        <div className="panel" style={{ gridColumn: 'span 2' }}>
-          <div className="panel-head">
-            <div><div className="panel-title">AI Insights</div><div className="panel-sub">Latest {topInsights.length} generated</div></div>
-            <Link className="panel-link" to="/ai-insights">View all →</Link>
-          </div>
-          {topInsights.map(ins => (
-            <div className="insight" key={ins.Insight_ID}>
-              <div>
-                <div className="insight-text">{ins.Insight_Text}</div>
-                <div className="insight-meta" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span className={`sev-tag ${SEV_TAG_CLASS[ins.Severity]}`}>{SEV_TAG[ins.Severity]}</span>
-                  {ins.Generated_Date}
-                </div>
+        {topInsights.map(ins => (
+          <div className="insight" key={ins.Insight_ID}>
+            <div>
+              <div className="insight-text">{ins.Insight_Text}</div>
+              <div className="insight-meta" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span className={`sev-tag ${SEV_TAG_CLASS[ins.Severity]}`}>{SEV_TAG[ins.Severity]}</span>
+                {ins.Generated_Date}
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
 
       <div className="grid-2">
         <div className="panel">
           <div className="panel-head">
-            <div><div className="panel-title">Lead Journey Summary</div><div className="panel-sub">{mom.current_period.label} funnel</div></div>
+            <div><div className="panel-title">Lead Journey Summary</div><div className="panel-sub">{period.current.label} funnel</div></div>
           </div>
           <div className="funnel-strip">
             {funnelStages.map(s => {

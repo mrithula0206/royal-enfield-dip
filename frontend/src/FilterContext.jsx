@@ -12,12 +12,16 @@ function monthLabel(bucket) {
 
 export function FilterProvider({ children }) {
   const [months, setMonths] = useState([]); // [{value:'Jun-2026', bucket:'2026-06'}]
+  const [dates, setDates] = useState([]); // ['2026-05-01', ...]
   const [regionOptions, setRegionOptions] = useState([]);
   const [modelOptions, setModelOptions] = useState([]);
   const [sourceOptions, setSourceOptions] = useState([]);
 
+  const [mode, setMode] = useState('mom'); // 'mom' | 'dod'
   const [currentMonth, setCurrentMonth] = useState(null);
   const [previousMonth, setPreviousMonth] = useState(null);
+  const [currentDate, setCurrentDate] = useState(null);
+  const [previousDate, setPreviousDate] = useState(null);
   const [region, setRegion] = useState('');
   const [model, setModel] = useState('');
   const [source, setSource] = useState('');
@@ -31,6 +35,14 @@ export function FilterProvider({ children }) {
         setPreviousMonth(ms.length > 1 ? ms[ms.length - 2].value : ms[ms.length - 1].value);
       }
     }).catch(() => {});
+    api.dailyTrend({ granularity: 'daily', days: 365 }).then(r => {
+      const ds = r.points.map(p => p.bucket);
+      setDates(ds);
+      if (ds.length) {
+        setCurrentDate(ds[ds.length - 1]);
+        setPreviousDate(ds.length > 1 ? ds[ds.length - 2] : ds[ds.length - 1]);
+      }
+    }).catch(() => {});
     api.masterData('region').then(r => setRegionOptions(r.rows.map(x => x.Region))).catch(() => {});
     api.masterData('model').then(r => setModelOptions(r.rows.map(x => x.Model))).catch(() => {});
     api.masterData('source').then(r => setSourceOptions(r.rows.map(x => x.Source))).catch(() => {});
@@ -40,10 +52,13 @@ export function FilterProvider({ children }) {
   const activeFilterCount = [region, model, source].filter(Boolean).length;
 
   const value = useMemo(() => ({
-    months, currentMonth, setCurrentMonth, previousMonth, setPreviousMonth,
+    months, dates, mode, setMode,
+    currentMonth, setCurrentMonth, previousMonth, setPreviousMonth,
+    currentDate, setCurrentDate, previousDate, setPreviousDate,
     region, setRegion, model, setModel, source, setSource,
     regionOptions, modelOptions, sourceOptions, clearFilters, activeFilterCount,
-  }), [months, currentMonth, previousMonth, region, model, source, regionOptions, modelOptions, sourceOptions]);
+  }), [months, dates, mode, currentMonth, previousMonth, currentDate, previousDate,
+      region, model, source, regionOptions, modelOptions, sourceOptions]);
 
   return <FilterContext.Provider value={value}>{children}</FilterContext.Provider>;
 }
