@@ -33,6 +33,12 @@ SHEET_TABLE_MAP = {
     "Campaign_Status_Master": "campaign_status_master",
     "AI_Insights": "ai_insights",
     "Daily_Report": "daily_report",
+    "Call_Log": "call_log",
+    "Follow_Up": "follow_up",
+    "Customer_Feedback": "customer_feedback",
+    "Ad_Performance": "ad_performance",
+    "Offline_Channel_Performance": "offline_channel_performance",
+    "Affiliate_Payout": "affiliate_payout",
 }
 
 DATE_COLUMNS = {
@@ -42,6 +48,11 @@ DATE_COLUMNS = {
     "campaign_hygiene": ["Date"],
     "ai_insights": ["Generated_Date"],
     "daily_report": ["Date"],
+    "call_log": ["Call_Date"],
+    "follow_up": ["Scheduled_Date", "Completed_Date"],
+    "customer_feedback": ["Feedback_Date"],
+    "ad_performance": ["Date"],
+    "offline_channel_performance": ["Date"],
 }
 
 
@@ -81,6 +92,16 @@ def run_ingest():
         "CREATE INDEX IF NOT EXISTS idx_history_lead ON lead_history(Lead_ID)",
         "CREATE INDEX IF NOT EXISTS idx_hygiene_campaign ON campaign_hygiene(Campaign_ID)",
         "CREATE INDEX IF NOT EXISTS idx_hygiene_date ON campaign_hygiene(Date)",
+        "CREATE INDEX IF NOT EXISTS idx_call_lead ON call_log(Lead_ID)",
+        "CREATE INDEX IF NOT EXISTS idx_call_date ON call_log(Call_Date)",
+        "CREATE INDEX IF NOT EXISTS idx_call_dealer ON call_log(Dealer_ID)",
+        "CREATE INDEX IF NOT EXISTS idx_followup_lead ON follow_up(Lead_ID)",
+        "CREATE INDEX IF NOT EXISTS idx_feedback_dealer ON customer_feedback(Dealer_ID)",
+        "CREATE INDEX IF NOT EXISTS idx_feedback_date ON customer_feedback(Feedback_Date)",
+        "CREATE INDEX IF NOT EXISTS idx_ad_date ON ad_performance(Date)",
+        "CREATE INDEX IF NOT EXISTS idx_ad_source ON ad_performance(Source)",
+        "CREATE INDEX IF NOT EXISTS idx_offline_date ON offline_channel_performance(Date)",
+        "CREATE INDEX IF NOT EXISTS idx_offline_region ON offline_channel_performance(Region)",
     ]
     for stmt in index_stmts:
         cur.execute(stmt)

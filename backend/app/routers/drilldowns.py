@@ -54,6 +54,7 @@ def get_drilldown(
             if info is not None:
                 r["Zone"] = info["Zone"]
                 r["Performance_Band"] = info["Performance_Band"]
+                r["State"] = info["State"]
     elif dim == "campaign":
         master = table_df("campaign_master").set_index("Campaign_ID")
         for r in rows:

@@ -3,7 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .routers import (
     kpis, drilldowns, comparisons, top_bottom, campaign_hygiene, ai_insights, lead_journey,
-    reports, master_data,
+    reports, master_data, call_center, follow_up, feedback, ad_performance, offline_performance,
+    affiliate,
 )
 
 app = FastAPI(
@@ -29,6 +30,12 @@ app.include_router(ai_insights.router)
 app.include_router(lead_journey.router)
 app.include_router(reports.router)
 app.include_router(master_data.router)
+app.include_router(call_center.router)
+app.include_router(follow_up.router)
+app.include_router(feedback.router)
+app.include_router(ad_performance.router)
+app.include_router(offline_performance.router)
+app.include_router(affiliate.router)
 
 
 @app.get("/api/health")

@@ -8,6 +8,8 @@ import RegionPerformance from './pages/RegionPerformance';
 import DealerPerformance from './pages/DealerPerformance';
 import ModelPerformance from './pages/ModelPerformance';
 import SourcePerformance from './pages/SourcePerformance';
+import CustomerOps from './pages/CustomerOps';
+import MediaPerformance from './pages/MediaPerformance';
 import Campaigns from './pages/Campaigns';
 import CampaignHygiene from './pages/CampaignHygiene';
 import LeadJourney from './pages/LeadJourney';
@@ -32,6 +34,8 @@ export default function App() {
             <Route path="/dealer-performance" element={<DealerPerformance />} />
             <Route path="/model-performance" element={<ModelPerformance />} />
             <Route path="/source-performance" element={<SourcePerformance />} />
+            <Route path="/customer-ops" element={<CustomerOps />} />
+            <Route path="/media-performance" element={<MediaPerformance />} />
             <Route path="/campaigns" element={<Campaigns />} />
             <Route path="/campaign-hygiene" element={<CampaignHygiene />} />
             <Route path="/lead-journey" element={<LeadJourney />} />

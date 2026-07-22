@@ -42,4 +42,24 @@ export const api = {
   dailySummary: (params = {}) => request('/api/reports/daily-summary', params),
 
   masterData: (entity) => request(`/api/master-data/${entity}`),
+
+  callCenterSummary: () => request('/api/call-center/summary'),
+  callCenterByStatus: () => request('/api/call-center/by-status'),
+  callCenterByDealer: () => request('/api/call-center/by-dealer'),
+
+  followUpSummary: () => request('/api/follow-up/summary'),
+  followUpByStatus: () => request('/api/follow-up/by-status'),
+
+  feedbackSummary: () => request('/api/feedback/summary'),
+  feedbackByDealer: () => request('/api/feedback/by-dealer'),
+
+  adPerformanceSummary: () => request('/api/ad-performance/summary'),
+  adPerformanceTrend: (params = {}) => request('/api/ad-performance/trend', params),
+  adPerformanceSearchSplit: () => request('/api/ad-performance/search-split'),
+
+  offlineSummary: () => request('/api/offline/summary'),
+  offlineByRegion: () => request('/api/offline/by-region'),
+
+  affiliateSummary: () => request('/api/affiliate/summary'),
+  affiliateByMonth: () => request('/api/affiliate/by-month'),
 };

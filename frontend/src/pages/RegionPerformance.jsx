@@ -66,11 +66,12 @@ export default function RegionPerformance() {
             <div><div className="panel-title">All Regions</div><div className="panel-sub">Full funnel breakdown</div></div>
           </div>
           <table>
-            <thead><tr><th>Region</th><th>Zone</th><th className="mono">Leads</th><th className="mono">Bookings</th><th className="mono">E2B%</th><th className="mono">L2B%</th><th>Band</th></tr></thead>
+            <thead><tr><th>Region</th><th>State</th><th>Zone</th><th className="mono">Leads</th><th className="mono">Bookings</th><th className="mono">E2B%</th><th className="mono">L2B%</th><th>Band</th></tr></thead>
             <tbody>
               {rows.map(r => (
                 <tr key={r.Region}>
                   <td>{r.Region}</td>
+                  <td style={{ color: 'var(--text-dim)' }}>{r.State}</td>
                   <td style={{ color: 'var(--text-dim)' }}>{r.Zone}</td>
                   <td className="mono">{r.Leads}</td>
                   <td className="mono">{r.Bookings}</td>

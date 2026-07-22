@@ -4,7 +4,7 @@ import { api } from '../api';
 import {
   IconHome, IconMapPin, IconBuilding, IconBike, IconShare, IconMegaphone, IconShield,
   IconCompass, IconSparkle, IconFileText, IconBarChart, IconDatabase, IconTarget,
-  IconChevronLeft, IconCompare,
+  IconChevronLeft, IconCompare, IconPhone, IconTv,
 } from './Icons';
 
 const navItem = ({ isActive }) => `nav-item ${isActive ? 'active' : ''}`;
@@ -16,6 +16,8 @@ const MAIN_NAV = [
   { to: '/dealer-performance', label: 'Dealer Performance', icon: IconBuilding },
   { to: '/model-performance', label: 'Model Performance', icon: IconBike },
   { to: '/source-performance', label: 'Source Performance', icon: IconShare },
+  { to: '/customer-ops', label: 'Customer Ops', icon: IconPhone },
+  { to: '/media-performance', label: 'Media Performance', icon: IconTv },
   { to: '/campaigns', label: 'Campaigns', icon: IconMegaphone },
   { to: '/campaign-hygiene', label: 'Campaign Hygiene', icon: IconShield, badgeKey: 'hygiene' },
   { to: '/lead-journey', label: 'Lead Journey', icon: IconCompass },
