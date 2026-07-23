@@ -16,6 +16,7 @@ import LeadJourney from './pages/LeadJourney';
 import AIDailySummary from './pages/AIDailySummary';
 import DailySummary from './pages/DailySummary';
 import Reports from './pages/Reports';
+import Forecasting from './pages/Forecasting';
 import MasterData from './pages/MasterData';
 import Targets from './pages/Targets';
 
@@ -42,6 +43,7 @@ export default function App() {
             <Route path="/ai-insights" element={<AIDailySummary />} />
             <Route path="/daily-summary" element={<DailySummary />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/forecasting" element={<Forecasting />} />
             <Route path="/master-data" element={<MasterData />} />
             <Route path="/targets" element={<Targets />} />
           </Routes>

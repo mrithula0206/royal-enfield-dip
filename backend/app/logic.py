@@ -62,6 +62,8 @@ def compute_kpis(df: pd.DataFrame) -> dict:
 
     e2b = round(bookings / enquiries, 4) if enquiries else 0.0
     l2b = round(bookings / leads, 4) if leads else 0.0
+    l2e = round(enquiries / leads, 4) if leads else 0.0
+    b2r = round(retail / bookings, 4) if bookings else 0.0
     dup_pct = round(duplicate_leads / leads, 4) if leads else 0.0
 
     return {
@@ -75,6 +77,8 @@ def compute_kpis(df: pd.DataFrame) -> dict:
         "Duplicate_Leads": duplicate_leads,
         "E2B_pct": e2b,
         "L2B_pct": l2b,
+        "L2E_pct": l2e,
+        "B2R_pct": b2r,
         "Duplicate_pct": dup_pct,
     }
 
@@ -88,7 +92,7 @@ def pct_delta(current: float, previous: float) -> float:
 def kpi_deltas(current: dict, previous: dict) -> dict:
     """Delta for every numeric KPI: percent change for counts, point change for ratios."""
     out = {}
-    ratio_keys = {"E2B_pct", "L2B_pct", "Duplicate_pct"}
+    ratio_keys = {"E2B_pct", "L2B_pct", "L2E_pct", "B2R_pct", "Duplicate_pct"}
     for k in current:
         if k in ratio_keys:
             out[k] = round((current[k] - previous[k]) * 100, 2) if previous.get(k) is not None else None

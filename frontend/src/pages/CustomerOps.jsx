@@ -19,17 +19,19 @@ export default function CustomerOps() {
   const [fuByStatus, setFuByStatus] = useState(null);
   const [fbSummary, setFbSummary] = useState(null);
   const [fbByDealer, setFbByDealer] = useState(null);
+  const [fbByRegion, setFbByRegion] = useState(null);
+  const [satisfactionImpact, setSatisfactionImpact] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     Promise.all([
       api.callCenterSummary(), api.callCenterByStatus(), api.callCenterByDealer(),
       api.followUpSummary(), api.followUpByStatus(),
-      api.feedbackSummary(), api.feedbackByDealer(),
-    ]).then(([cs, cbs, cbd, fus, fubs, fbs, fbd]) => {
+      api.feedbackSummary(), api.feedbackByDealer(), api.feedbackByRegion(), api.feedbackSatisfactionImpact(),
+    ]).then(([cs, cbs, cbd, fus, fubs, fbs, fbd, fbr, si]) => {
       setCallSummary(cs); setCallByStatus(cbs.rows); setCallByDealer(cbd.rows);
       setFuSummary(fus); setFuByStatus(fubs.rows);
-      setFbSummary(fbs); setFbByDealer(fbd.rows);
+      setFbSummary(fbs); setFbByDealer(fbd.rows); setFbByRegion(fbr.rows); setSatisfactionImpact(si);
     }).catch(e => setError(e.message));
   }, []);
 
@@ -203,27 +205,77 @@ export default function CustomerOps() {
             </div>
           </div>
 
-          <div className="panel">
-            <div className="panel-head">
-              <div><div className="panel-title">Dealer NPS Leaderboard</div><div className="panel-sub">Higher tiers consistently score higher — a real service-quality signal</div></div>
+          <div className="grid-2">
+            <div className="panel">
+              <div className="panel-head">
+                <div><div className="panel-title">Dealer NPS Leaderboard</div><div className="panel-sub">Higher tiers consistently score higher — a real service-quality signal</div></div>
+              </div>
+              <div style={{ overflowX: 'auto' }}>
+                <table>
+                  <thead><tr><th>Dealer</th><th>Tier</th><th>Region</th><th className="mono">Responses</th><th className="mono">Avg Score</th><th className="mono">NPS</th><th className="mono">Complaint Rate</th></tr></thead>
+                  <tbody>
+                    {(fbByDealer || []).slice(0, 12).map(r => (
+                      <tr key={r.Dealer_ID}>
+                        <td>{r.Dealer_Name || r.Dealer_ID}</td>
+                        <td><span className="tier-pill">{r.Tier}</span></td>
+                        <td>{r.Region}</td>
+                        <td className="mono">{r.Responses}</td>
+                        <td className="mono">{r.Avg_NPS}</td>
+                        <td className={`mono ${r.NPS >= 0 ? 'pos' : 'neg'}`}>{r.NPS}</td>
+                        <td className="mono">{pct(r.Complaint_Rate)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <table>
-              <thead><tr><th>Dealer</th><th>Tier</th><th>Region</th><th className="mono">Responses</th><th className="mono">Avg Score</th><th className="mono">NPS</th><th className="mono">Complaint Rate</th></tr></thead>
-              <tbody>
-                {(fbByDealer || []).slice(0, 12).map(r => (
-                  <tr key={r.Dealer_ID}>
-                    <td>{r.Dealer_Name || r.Dealer_ID}</td>
-                    <td><span className="tier-pill">{r.Tier}</span></td>
-                    <td>{r.Region}</td>
-                    <td className="mono">{r.Responses}</td>
-                    <td className="mono">{r.Avg_NPS}</td>
-                    <td className={`mono ${r.NPS >= 0 ? 'pos' : 'neg'}`}>{r.NPS}</td>
-                    <td className="mono">{pct(r.Complaint_Rate)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+            <div className="panel">
+              <div className="panel-head">
+                <div><div className="panel-title">Region-Wise NPS</div><div className="panel-sub">Ranked highest to lowest</div></div>
+              </div>
+              <table>
+                <thead><tr><th>Region</th><th className="mono">Responses</th><th className="mono">NPS</th><th className="mono">Complaint Rate</th></tr></thead>
+                <tbody>
+                  {(fbByRegion || []).map(r => (
+                    <tr key={r.Region}>
+                      <td>{r.Region}</td>
+                      <td className="mono">{r.Responses}</td>
+                      <td className={`mono ${r.NPS >= 0 ? 'pos' : 'neg'}`}>{r.NPS}</td>
+                      <td className="mono">{pct(r.Complaint_Rate)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
+
+          {satisfactionImpact && (
+            <div className="panel">
+              <div className="panel-head">
+                <div>
+                  <div className="panel-title">Complaint Rate vs Lead Leakage</div>
+                  <div className="panel-sub">
+                    Correlation coefficient: {satisfactionImpact.correlation_complaint_vs_leakage ?? '—'}
+                    {' '}— dealers with high complaint rates, ranked against how much of their lead volume never converts to a booking
+                  </div>
+                </div>
+              </div>
+              <table>
+                <thead><tr><th>Dealer</th><th>Tier</th><th className="mono">Complaint Rate</th><th className="mono">Lead Leakage%</th></tr></thead>
+                <tbody>
+                  {satisfactionImpact.rows.slice(0, 12).map(r => (
+                    <tr key={r.Dealer_ID}>
+                      <td>{r.Dealer_Name || r.Dealer_ID}</td>
+                      <td><span className="tier-pill">{r.Tier}</span></td>
+                      <td className="mono neg">{pct(r.Complaint_Rate)}</td>
+                      <td className="mono">{pct(r.Leakage_pct)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </>
       )}
     </>

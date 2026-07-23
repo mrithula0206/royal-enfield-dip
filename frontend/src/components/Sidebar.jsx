@@ -4,7 +4,7 @@ import { api } from '../api';
 import {
   IconHome, IconMapPin, IconBuilding, IconBike, IconShare, IconMegaphone, IconShield,
   IconCompass, IconSparkle, IconFileText, IconBarChart, IconDatabase, IconTarget,
-  IconChevronLeft, IconCompare, IconPhone, IconTv,
+  IconChevronLeft, IconCompare, IconPhone, IconTv, IconTrendingUp,
 } from './Icons';
 
 const navItem = ({ isActive }) => `nav-item ${isActive ? 'active' : ''}`;
@@ -24,6 +24,7 @@ const MAIN_NAV = [
   { to: '/ai-insights', label: 'AI Insights', icon: IconSparkle, badgeKey: 'insights' },
   { to: '/daily-summary', label: 'Daily Summary', icon: IconFileText },
   { to: '/reports', label: 'Reports', icon: IconBarChart },
+  { to: '/forecasting', label: 'Forecasting', icon: IconTrendingUp },
 ];
 
 const CONFIG_NAV = [

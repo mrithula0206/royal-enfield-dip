@@ -5,11 +5,18 @@ const KPI_ROWS = [
   { key: 'Leads', label: 'Leads' }, { key: 'New_Leads', label: 'New Leads' },
   { key: 'Enquiries', label: 'Enquiries' }, { key: 'Open_Enquiries', label: 'Open Enquiries' },
   { key: 'Bookings', label: 'Bookings' }, { key: 'Dropped', label: 'Dropped' },
-  { key: 'Retail', label: 'Retail' }, { key: 'E2B_pct', label: 'E2B%', isPct: true },
-  { key: 'L2B_pct', label: 'L2B%', isPct: true }, { key: 'Duplicate_pct', label: 'Duplicate%', isPct: true },
+  { key: 'Retail', label: 'Retail' }, { key: 'L2E_pct', label: 'L2E%', isPct: true },
+  { key: 'E2B_pct', label: 'E2B%', isPct: true }, { key: 'L2B_pct', label: 'L2B%', isPct: true },
+  { key: 'B2R_pct', label: 'B2R%', isPct: true }, { key: 'Duplicate_pct', label: 'Duplicate%', isPct: true },
 ];
 
 const DAILY_COLS = [
+  { key: 'Leads', label: 'Leads' }, { key: 'Enquiries', label: 'Enquiries' },
+  { key: 'Bookings', label: 'Bookings' }, { key: 'Open_Enquiries', label: 'Open Enquiries' },
+  { key: 'Dropped', label: 'Dropped' },
+];
+
+const WEEK_ROWS = [
   { key: 'Leads', label: 'Leads' }, { key: 'Enquiries', label: 'Enquiries' },
   { key: 'Bookings', label: 'Bookings' }, { key: 'Open_Enquiries', label: 'Open Enquiries' },
   { key: 'Dropped', label: 'Dropped' },
@@ -32,6 +39,9 @@ const dateInputStyle = { background: 'var(--surface)', border: '1px solid var(--
 export default function Reports() {
   const [tab, setTab] = useState('mom');
   const [mom, setMom] = useState(null);
+  const [wow, setWow] = useState(null);
+  const [dropoff, setDropoff] = useState(null);
+  const [flagged, setFlagged] = useState(null);
   const [dailyPoints, setDailyPoints] = useState([]);
   const [minDate, setMinDate] = useState(null);
   const [maxDate, setMaxDate] = useState(null);
@@ -41,6 +51,9 @@ export default function Reports() {
 
   useEffect(() => {
     api.monthOnMonth().then(setMom).catch(e => setError(e.message));
+    api.weekOnWeek().then(setWow).catch(() => {});
+    api.funnelDropoff().then(setDropoff).catch(() => {});
+    api.spikeDrop().then(r => setFlagged(r.flagged)).catch(() => {});
     api.dailyTrend({ granularity: 'daily', days: 61 }).then(r => {
       setDailyPoints(r.points);
       const ds = r.points.map(p => p.bucket);
@@ -58,19 +71,25 @@ export default function Reports() {
     acc[c.key] = rangeRows.reduce((s, r) => s + (r[c.key] || 0), 0);
     return acc;
   }, {});
+  const flagMap = Object.fromEntries((flagged || []).map(f => [f.Date, f]));
+
+  const wowDelta = (k) => wow && wow.deltas ? wow.deltas[k] : null;
 
   return (
     <>
       <div className="page-head">
         <div>
           <div className="page-title">Reports</div>
-          <div className="page-meta">Month-on-month overview and day-by-day breakdown</div>
+          <div className="page-meta">Month/week comparisons, daily breakdown, funnel drop-off, and anomaly detection</div>
         </div>
       </div>
 
       <div className="tab-row">
         <button className={tab === 'mom' ? 'on' : ''} onClick={() => setTab('mom')}>Month on Month</button>
+        <button className={tab === 'wow' ? 'on' : ''} onClick={() => setTab('wow')}>Week on Week</button>
         <button className={tab === 'dod' ? 'on' : ''} onClick={() => setTab('dod')}>Daily Breakdown</button>
+        <button className={tab === 'dropoff' ? 'on' : ''} onClick={() => setTab('dropoff')}>Funnel Drop-off</button>
+        <button className={tab === 'anomaly' ? 'on' : ''} onClick={() => setTab('anomaly')}>Spike/Drop Detection</button>
       </div>
 
       {tab === 'mom' && (
@@ -88,6 +107,29 @@ export default function Reports() {
                     <td className="mono">{fmt(mom.previous_period.kpis[k.key], k.isPct)}</td>
                     <td className="mono">{fmt(mom.current_period.kpis[k.key], k.isPct)}</td>
                     <DeltaCell v={mom.deltas[k.key]} unit={mom.deltas[k.key + '_unit']} />
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
+      )}
+
+      {tab === 'wow' && (
+        !wow || !wow.current_week ? <div className="loading">Loading…</div> : (
+          <div className="panel">
+            <div className="panel-head">
+              <div><div className="panel-title">{wow.previous_week.label} → {wow.current_week.label}</div><div className="panel-sub">Last complete week vs the one before it</div></div>
+            </div>
+            <table>
+              <thead><tr><th>KPI</th><th className="mono">Previous Week</th><th className="mono">Current Week</th><th>Change</th></tr></thead>
+              <tbody>
+                {WEEK_ROWS.map(k => (
+                  <tr key={k.key}>
+                    <td>{k.label}</td>
+                    <td className="mono">{fmt(wow.previous_week[k.key])}</td>
+                    <td className="mono">{fmt(wow.current_week[k.key])}</td>
+                    <DeltaCell v={wowDelta(k.key)} unit="pct" />
                   </tr>
                 ))}
               </tbody>
@@ -114,24 +156,71 @@ export default function Reports() {
             <div style={{ overflowX: 'auto' }}>
               <table>
                 <thead>
-                  <tr><th>Date</th>{DAILY_COLS.map(c => <th key={c.key} className="mono">{c.label}</th>)}</tr>
+                  <tr><th>Date</th>{DAILY_COLS.map(c => <th key={c.key} className="mono">{c.label}</th>)}<th>Anomaly</th></tr>
                 </thead>
                 <tbody>
                   {rangeRows.map(r => (
                     <tr key={r.bucket}>
                       <td className="mono">{r.bucket}</td>
                       {DAILY_COLS.map(c => <td key={c.key} className="mono">{r[c.key]}</td>)}
+                      <td>{flagMap[r.bucket] ? <span className={`sev-tag ${flagMap[r.bucket].type === 'Spike' ? 'Low' : 'High'}`}>{flagMap[r.bucket].type}</span> : ''}</td>
                     </tr>
                   ))}
                   <tr style={{ fontWeight: 700 }}>
                     <td>Total ({rangeRows.length} days)</td>
                     {DAILY_COLS.map(c => <td key={c.key} className="mono">{totals[c.key].toLocaleString('en-IN')}</td>)}
+                    <td></td>
                   </tr>
                 </tbody>
               </table>
             </div>
           )}
         </div>
+      )}
+
+      {tab === 'dropoff' && (
+        !dropoff ? <div className="loading">Loading…</div> : (
+          <div className="panel">
+            <div className="panel-head">
+              <div><div className="panel-title">Funnel Drop-off</div><div className="panel-sub">Biggest leak: {dropoff.worst_leak_stage} ({(dropoff.worst_leak_pct * 100).toFixed(1)}% lost at this stage)</div></div>
+            </div>
+            <div className="funnel-strip">
+              {dropoff.stages.map(s => (
+                <div className="funnel-step" key={s.stage}>
+                  <div className="funnel-label">{s.stage}</div>
+                  <div className="funnel-value">{s.value.toLocaleString('en-IN')}</div>
+                  <div className="funnel-pct">{s.dropped === null ? 'Start' : `-${s.dropped.toLocaleString('en-IN')} (${(s.drop_pct * 100).toFixed(1)}%)`}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      )}
+
+      {tab === 'anomaly' && (
+        !flagged ? <div className="loading">Loading…</div> : flagged.length === 0 ? (
+          <div className="empty-box">No days deviated beyond the threshold.</div>
+        ) : (
+          <div className="panel">
+            <div className="panel-head">
+              <div><div className="panel-title">Spike / Drop Detection</div><div className="panel-sub">Days where Leads deviated ≥1.5 standard deviations from the 7-day rolling average</div></div>
+            </div>
+            <table>
+              <thead><tr><th>Date</th><th className="mono">Leads</th><th className="mono">Expected</th><th className="mono">Z-Score</th><th>Type</th></tr></thead>
+              <tbody>
+                {flagged.map(f => (
+                  <tr key={f.Date}>
+                    <td className="mono">{f.Date}</td>
+                    <td className="mono">{f.Leads}</td>
+                    <td className="mono">{f.Expected_Leads}</td>
+                    <td className="mono">{f.z}</td>
+                    <td><span className={`sev-tag ${f.type === 'Spike' ? 'Low' : 'High'}`}>{f.type}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
       )}
     </>
   );

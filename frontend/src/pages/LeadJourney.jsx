@@ -6,16 +6,24 @@ import { api } from '../api';
 import KpiCard from '../components/KpiCard';
 import { CHART_GRID, CHART_AXIS, AXIS_TICK_STYLE, AXIS_TICK_MONO_STYLE, TOOLTIP_STYLE } from '../chartTheme';
 
+const VELOCITY_DIMS = { region: 'Region', dealer: 'Dealer_ID', model: 'Model' };
+
 export default function LeadJourney() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [journey, setJourney] = useState(null);
   const [metrics, setMetrics] = useState(null);
   const [error, setError] = useState(null);
+  const [velocityBy, setVelocityBy] = useState('region');
+  const [velocity, setVelocity] = useState(null);
 
   useEffect(() => {
     api.journeyMetrics().then(setMetrics).catch(e => setError(e.message));
   }, []);
+
+  useEffect(() => {
+    api.journeyVelocity(velocityBy).then(r => setVelocity(r.rows)).catch(() => {});
+  }, [velocityBy]);
 
   const search = () => {
     if (!query.trim()) return;
@@ -73,6 +81,36 @@ export default function LeadJourney() {
                 <Bar dataKey="count" fill="var(--red)" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
+          </div>
+          <div className="panel" style={{ marginBottom: 18 }}>
+            <div className="panel-head">
+              <div><div className="panel-title">Stage Velocity</div><div className="panel-sub">Avg days per stage — Lead→Enquiry, Enquiry→Booking, Booking→Retail. Worst quartile flagged as slow pipeline.</div></div>
+              <div className="toggle-group">
+                {Object.keys(VELOCITY_DIMS).map(d => (
+                  <button key={d} className={velocityBy === d ? 'on' : ''} onClick={() => setVelocityBy(d)}>{d[0].toUpperCase() + d.slice(1)}</button>
+                ))}
+              </div>
+            </div>
+            {!velocity ? <div className="loading">Loading…</div> : (
+              <div style={{ overflowX: 'auto' }}>
+                <table>
+                  <thead><tr><th>{velocityBy[0].toUpperCase() + velocityBy.slice(1)}</th><th className="mono">Leads</th><th className="mono">L2E Days</th><th className="mono">E2B Days</th><th className="mono">B2R Days</th><th className="mono">Total Cycle</th><th>Slow?</th></tr></thead>
+                  <tbody>
+                    {velocity.slice(0, 15).map(r => (
+                      <tr key={r[VELOCITY_DIMS[velocityBy]]}>
+                        <td>{r[VELOCITY_DIMS[velocityBy]]}</td>
+                        <td className="mono">{r.Leads}</td>
+                        <td className="mono">{r.Avg_L2E_Days ?? '—'}</td>
+                        <td className="mono">{r.Avg_E2B_Days ?? '—'}</td>
+                        <td className="mono">{r.Avg_B2R_Days ?? '—'}</td>
+                        <td className="mono">{r.Total_Cycle_Days}</td>
+                        <td>{r.Slow_Pipeline ? <span className="sev-tag High">Slow</span> : <span style={{ color: 'var(--text-faint)' }}>—</span>}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </>
       )}

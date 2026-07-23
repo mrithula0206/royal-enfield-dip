@@ -15,17 +15,18 @@ export default function MediaPerformance() {
   const [offlineSummary, setOfflineSummary] = useState(null);
   const [offlineByRegion, setOfflineByRegion] = useState(null);
   const [affSummary, setAffSummary] = useState(null);
+  const [affPerf, setAffPerf] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     Promise.all([
       api.adPerformanceSummary(), api.adPerformanceSearchSplit(),
       api.offlineSummary(), api.offlineByRegion(),
-      api.affiliateSummary(),
-    ]).then(([ads, split, off, offRegion, aff]) => {
+      api.affiliateSummary(), api.affiliatePerformance(),
+    ]).then(([ads, split, off, offRegion, aff, affPerformance]) => {
       setAdSummary(ads); setSearchSplit(split.rows);
       setOfflineSummary(off); setOfflineByRegion(offRegion.rows);
-      setAffSummary(aff);
+      setAffSummary(aff); setAffPerf(affPerformance.rows);
     }).catch(e => setError(e.message));
   }, []);
 
@@ -180,19 +181,61 @@ export default function MediaPerformance() {
             </table>
           </div>
 
-          <div className="panel">
-            <div className="panel-head">
-              <div><div className="panel-title">Payment Status Mix</div></div>
+          <div className="grid-2">
+            <div className="panel">
+              <div className="panel-head">
+                <div><div className="panel-title">Payment Status Mix</div></div>
+              </div>
+              <div className="donut-legend">
+                {affSummary.status_mix.map(s => (
+                  <div className="donut-legend-row" key={s.Payment_Status}>
+                    <span className="donut-legend-left">{s.Payment_Status}</span>
+                    <span className="donut-legend-value">{s.Count}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="donut-legend">
-              {affSummary.status_mix.map(s => (
-                <div className="donut-legend-row" key={s.Payment_Status}>
-                  <span className="donut-legend-left">{s.Payment_Status}</span>
-                  <span className="donut-legend-value">{s.Count}</span>
+
+            {affPerf && (
+              <div className="panel">
+                <div className="panel-head">
+                  <div><div className="panel-title">Bookings per ₹1,000 Spent</div><div className="panel-sub">Spend-vs-output — who converts their payout most efficiently</div></div>
                 </div>
-              ))}
-            </div>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={affPerf} layout="vertical" margin={{ left: 10 }}>
+                    <CartesianGrid horizontal={false} stroke={CHART_GRID} />
+                    <XAxis type="number" tick={AXIS_TICK_MONO_STYLE} axisLine={false} tickLine={false} />
+                    <YAxis type="category" dataKey="Affiliate_Source" tick={AXIS_TICK_STYLE} axisLine={false} tickLine={false} width={90} />
+                    <Tooltip contentStyle={TOOLTIP_STYLE} />
+                    <Bar dataKey="Bookings_Per_1000_Spend" fill="#3D9B6F" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </div>
+
+          {affPerf && (
+            <div className="panel">
+              <div className="panel-head">
+                <div><div className="panel-title">Affiliate-wise Funnel</div><div className="panel-sub">Leads, bookings, retail and conversion% from the real lead funnel (not the payout ledger)</div></div>
+              </div>
+              <table>
+                <thead><tr><th>Partner</th><th className="mono">Leads</th><th className="mono">Bookings</th><th className="mono">Retail</th><th className="mono">L2B%</th><th className="mono">B2R%</th></tr></thead>
+                <tbody>
+                  {affPerf.map(r => (
+                    <tr key={r.Affiliate_Source}>
+                      <td>{r.Affiliate_Source}</td>
+                      <td className="mono">{r.Leads}</td>
+                      <td className="mono">{r.Bookings}</td>
+                      <td className="mono">{r.Retail}</td>
+                      <td className="mono">{pct(r.L2B_pct)}</td>
+                      <td className="mono">{pct(r.B2R_pct)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </>
       )}
     </>

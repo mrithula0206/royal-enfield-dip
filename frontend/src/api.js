@@ -37,6 +37,7 @@ export const api = {
   leadJourney: (leadId) => request(`/api/lead-journey/${leadId}`),
   searchLeads: (params = {}) => request('/api/lead-journey', params),
   journeyMetrics: (params = {}) => request('/api/lead-journey/metrics/summary', params),
+  journeyVelocity: (by = 'region') => request('/api/lead-journey/velocity', { by }),
 
   dailyTrend: (params = {}) => request('/api/reports/daily-trend', params),
   dailySummary: (params = {}) => request('/api/reports/daily-summary', params),
@@ -62,4 +63,31 @@ export const api = {
 
   affiliateSummary: () => request('/api/affiliate/summary'),
   affiliateByMonth: () => request('/api/affiliate/by-month'),
+  affiliatePerformance: () => request('/api/affiliate/performance'),
+
+  funnelDropoff: (params = {}) => request('/api/funnel/dropoff', params),
+
+  geoZone: (params = {}) => request('/api/geography/zone', params),
+  geoCity: (params = {}) => request('/api/geography/city', params),
+  geoCityLeakage: (params = {}) => request('/api/geography/city-dealer-leakage', params),
+
+  modelCross: (dim = 'zone', params = {}) => request('/api/model-intelligence/cross', { dim, ...params }),
+  modelDropoff: (params = {}) => request('/api/model-intelligence/dropoff', params),
+
+  dealerIntelligence: (params = {}) => request('/api/dealer-intelligence/summary', params),
+
+  walkinSummary: (params = {}) => request('/api/walkin/summary', params),
+
+  campaignsRanked: (params = {}) => request('/api/campaign-intelligence/ranked', params),
+  campaignsCostEfficiency: () => request('/api/campaign-intelligence/cost-efficiency'),
+  campaignsImpact: () => request('/api/campaign-intelligence/impact'),
+
+  weekOnWeek: () => request('/api/trends/week-on-week'),
+  spikeDrop: (params = {}) => request('/api/trends/spike-drop', params),
+
+  forecastSummary: () => request('/api/forecast/summary'),
+  forecastByRegion: (params = {}) => request('/api/forecast/by-region', params),
+
+  feedbackByRegion: () => request('/api/feedback/by-region'),
+  feedbackSatisfactionImpact: () => request('/api/feedback/satisfaction-impact'),
 };
